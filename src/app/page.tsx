@@ -79,9 +79,9 @@ function Page() {
         className="h-full flex flex-col"
       >
         {/* Beautiful Tab Bar */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 px-6 py-3 h-[65px]">
+        <div className="bg-gradient-to-br from-slate-50 to-slate-100 px-6 py-3 h-[65px]">
           <div className="flex items-center justify-between">
-            <TabsList className="bg-slate-100/70 p-1 rounded-xl shadow-sm">
+            <TabsList className="bg-slate-100/70 p-1 rounded-xl">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
                 const hasNotification = tabNotifications[tab.id];
@@ -89,7 +89,7 @@ function Page() {
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-slate-600 hover:text-slate-900 relative"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-slate-900 text-slate-600 hover:text-slate-900 relative"
                   >
                     <IconComponent className="h-4 w-4" />
                     <span className="font-medium">{tab.label}</span>
@@ -137,8 +137,8 @@ function Page() {
                 <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-br from-pink-400/10 to-orange-400/10 rounded-full blur-3xl pointer-events-none" />
 
                 {/* Chat Content */}
-                <div className="relative h-full p-6">
-                  <div className="h-full bg-white/50 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20">
+                <div className="relative h-full">
+                  <div className="h-full">
                     {chatInstances[tab.id]}
                   </div>
                 </div>

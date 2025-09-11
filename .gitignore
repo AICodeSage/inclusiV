@@ -39,3 +39,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Dependencies
+node_modules/
+**/venv/
+.venv/
+__pycache__/
+dist/
+build/
+*.egg-info/
+# Next.js
+.next/
+out/
+# Logs
+pnpm-debug.log*
+# Env
+.env
+.env.*
+!.env.example
+# Mac

@@ -41,16 +41,20 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Start the agents
-echo -e "${YELLOW}Starting Finance Agent...${NC}"
-python finance.py &
+echo -e "${YELLOW}Starting MTN MoMo Transaction Agent...${NC}"
+python momo_agent.py &
 pids+=($!)
 
-echo -e "${YELLOW}Starting IT Agent...${NC}"
-python it.py &
+echo -e "${YELLOW}Starting MediRescue Advisor Agent...${NC}"
+python medirescue_advisor.py &
 pids+=($!)
 
-echo -e "${YELLOW}Starting Buildings Management Agent...${NC}"
-python buildings_management.py &
+echo -e "${YELLOW}Starting Insurance Agent...${NC}"
+python insurance_agent.py &
+pids+=($!)
+
+echo -e "${YELLOW}Starting Business Research & Locator Agent...${NC}"
+python research_agent.py &
 pids+=($!)
 
 echo -e "${GREEN}All agents started successfully!${NC}"

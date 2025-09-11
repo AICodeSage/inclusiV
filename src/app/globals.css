@@ -120,3 +120,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix for CopilotKit markdown hydration error */
+@layer utilities {
+  /* Ensure code blocks in CopilotKit don't cause nesting issues */
+  .copilotKitMarkdownElement p {
+    display: contents;
+  }
+  
+  .copilotKitMarkdownElement p > div {
+    display: block;
+    margin: 0.5rem 0;
+  }
+  
+  /* Alternative approach - make code blocks inline-block when inside paragraphs */
+  .copilotKitMarkdownElement p code[class*="language-"] {
+    display: inline-block;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  /* Prevent div elements inside p tags in CopilotKit */
+  .copilotKitCodeBlockToolbarButtons {
+    position: absolute !important;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+  }
+}

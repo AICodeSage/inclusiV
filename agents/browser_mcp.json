@@ -1,0 +1,14 @@
+{
+    "mcpServers": {
+      "playwright": {
+        "command": "npx",
+        "args": ["@playwright/mcp@latest"],
+        "env": {
+          "MCP_LAUNCH_HEADLESS": "false"
+        },
+        "launchOptions": {
+          "headless": false
+        }
+      }
+    }
+  }

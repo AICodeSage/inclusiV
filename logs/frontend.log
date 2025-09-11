@@ -1,0 +1,31 @@
+
+> a2a-demo@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.4.2
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.130:3000
+
+ ✓ Starting...
+ ✓ Ready in 6.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 17.5s (3941 modules)
+ GET / 200 in 19574ms
+ ✓ Compiled in 2.6s (1883 modules)
+ ✓ Compiled in 658ms (1883 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 4.4s (3932 modules)
+ GET / 404 in 5189ms
+ GET /_next/static/css/app/layout.css?v=1757330542306 404 in 97ms
+ GET /_next/static/chunks/main-app.js?v=1757330542306 404 in 519ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 552ms
+ GET / 200 in 1473ms
+ GET /_next/static/css/app/page.css?v=1757330551256 404 in 136ms
+ GET /_next/static/css/app/layout.css?v=1757330551256 404 in 138ms
+ GET /_next/static/chunks/main-app.js?v=1757330551256 404 in 143ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 143ms
+ GET /_next/static/chunks/app/page.js 404 in 143ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 2.5s (2076 modules)
+ GET /favicon.ico 200 in 2729ms
+[?25h

@@ -4,6 +4,11 @@
   border-top-left-radius: 0.75rem;
   border-top-right-radius: 0.75rem;
   border: 1px solid var(--copilot-kit-separator-color) !important;
+  max-width: 800px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+  max-height: 120px !important;
+  overflow-y: auto !important;
+  resize: none !important;
 }
 
 .copilotKitChat {
@@ -12,12 +17,80 @@
 
 .copilotKitMessages {
   background-color: transparent !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* Internet Explorer 10+ */
+}
+
+.copilotKitMessages::-webkit-scrollbar {
+  display: none !important; /* WebKit */
 }
 
 .copilotKitInputContainer {
   background-color: transparent !important;
+  padding: 8px 16px !important;
+  min-height: auto !important;
+}
+
+/* Nudge input area slightly wider to align with routed messages container */
+.copilotKitChat .copilotKitInputContainer {
+  position: relative !important;
+  margin-left: -16px !important;  /* match px-4 on container */
+  margin-right: -16px !important;
+  width: calc(100% + 32px) !important;
 }
 
 .poweredBy {
   background-color: transparent !important;
+  padding: 4px 0 !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
 }
+
+/* Additional footer reduction styles */
+.copilotKitFooter {
+  padding: 4px 8px !important;
+  min-height: 20px !important;
+  background-color: transparent !important;
+  border-top: none !important;
+}
+
+.copilotKitInputWrapper {
+  margin-bottom: 4px !important;
+}
+
+/* Reduce spacing around input area */
+.copilotKitChat [data-testid="copilot-input-container"] {
+  padding: 8px !important;
+  background-color: transparent !important;
+  border-top: none !important; /* we'll draw an exact-position separator via ::before */
+  box-shadow: none !important;
+  margin-left: -16px !important;  /* ensure inner wrapper stretches to edges */
+  margin-right: -16px !important;
+  width: calc(100% + 32px) !important;
+}
+
+/* Exact-position footer border aligned to input top, without moving layout */
+.copilotKitChat [data-testid="copilot-input-container"]::before {
+  content: "";
+  position: absolute;
+  left: -16px; /* match container px-4 */
+  right: -16px;
+  top: 8px; /* equals container padding-top so it sits exactly at input top edge */
+  height: 1px;
+  background: var(--copilot-kit-separator-color, rgba(0,0,0,0.08));
+  pointer-events: none;
+}
+
+.copilotKitChat .copilotKitInputContainer {
+  gap: 4px !important;
+}
+
+/* Ensure any footer wrapper variants are transparent */
+.copilotKitChat [class*="Footer"],
+.copilotKitChat [class*="footer"],
+.copilotKitChat .copilotKitInputWrapper {
+  background-color: transparent !important;
+  border-top: none !important;
+  box-shadow: none !important;
+}
+

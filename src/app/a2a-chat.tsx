@@ -47,6 +47,15 @@ const Chat = ({ onNotification }: { onNotification?: () => void }) => {
   const { state } = useCoAgent({ name: "a2a_chat" });
 
   const { isLoading, visibleMessages } = useCopilotChat();
+  const [brandAnimateIn, setBrandAnimateIn] = useState(false);
+
+  useEffect(() => {
+    if ((visibleMessages?.length || 0) === 0) {
+      const id = setTimeout(() => setBrandAnimateIn(true), 60);
+      return () => clearTimeout(id);
+    }
+    setBrandAnimateIn(false);
+  }, [visibleMessages?.length]);
 
   const handleNotification = useCallback(() => {
     onNotification?.();
@@ -77,7 +86,7 @@ const Chat = ({ onNotification }: { onNotification?: () => void }) => {
         return null;
       }
       return (
-        <div className="w-full max-w-2xl ml-0 mb-4 text-left">
+        <div className="w-full max-w-[800px] mx-auto mb-4 text-left px-4">
           <div className="space-y-2">
             {state.a2aMessages.map((message, idx) => {
               return (
@@ -116,6 +125,400 @@ const Chat = ({ onNotification }: { onNotification?: () => void }) => {
     },
   });
 
+  // Insurance plans picker (modal): lets user view and choose a plan
+  useCopilotAction({
+    name: "showInsurancePlans",
+    description:
+      "Render available micro-health insurance plans as cards (Basic, Plus). Returns selected plan and prompts enrollment.",
+    parameters: [
+      { name: "msisdn", type: "string", description: "Optional MSISDN to enroll", required: false },
+    ],
+    renderAndWaitForResponse: function ShowInsurancePlans({ args, respond }) {
+      const plans = [
+        {
+          id: "basic",
+          name: "Basic",
+          price: "R29/mo",
+          cap: "R2,000 annual cover",
+          perIncident: "Up to R1,000 per incident",
+          features: ["Emergency transport", "Simple, affordable", "4‑week waiting period"],
+        },
+        {
+          id: "plus",
+          name: "Plus",
+          price: "R59/mo",
+          cap: "R5,000 annual cover",
+          perIncident: "Up to R2,000 per incident",
+          features: ["Priority dispatch", "Higher cover limits", "4‑week waiting period"],
+        },
+      ];
+
+      const [selected, setSelected] = useState<string | null>(null);
+      const [busy, setBusy] = useState(false);
+      const [closed, setClosed] = useState(false);
+
+      const submit = () => {
+        if (!selected || busy) return;
+        setBusy(true);
+        respond?.(
+          JSON.stringify({
+            type: "insurance_plan_selected",
+            plan: selected,
+            msisdn: (args.msisdn || "").trim(),
+          })
+        );
+        Promise.resolve().then(() => setClosed(true));
+      };
+
+      if (closed) {
+        return <div />;
+      }
+
+      return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative z-[61] my-8 mx-auto max-w-2xl w-full overflow-hidden rounded-2xl border border-white/20 bg-white/50 backdrop-blur-sm supports-[backdrop-filter]:bg-white/40 shadow-xl">
+            <div className="flex items-start gap-3 px-6 py-4 border-b border-white/20">
+              <div className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-full bg-slate-900/80 text-white shadow-sm ring-4 ring-white/20">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold text-slate-900">Choose your Micro‑Health plan</h2>
+                <p className="mt-1 text-sm text-slate-600">Emergency transport + simple cover. Cancel anytime.</p>
+              </div>
+            </div>
+
+            <div className="px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+              {plans.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelected(p.id)}
+                  className={`text-left rounded-2xl border overflow-hidden transform transition-all duration-200 ${
+                    selected === p.id
+                      ? "border-slate-900/20 bg-white shadow-2xl ring-2 ring-slate-900/10"
+                      : "border-slate-200 bg-white/80 hover:bg-white hover:shadow-2xl hover:-translate-y-0.5"
+                  }`}
+                >
+                  <div className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="text-lg font-semibold text-slate-900">{p.name}</div>
+                      <div className="text-slate-900 font-extrabold text-xl">{p.price}</div>
+                    </div>
+                    <div className="mt-3 text-sm text-slate-700">{p.cap}</div>
+                    <div className="mt-1 text-sm text-slate-700">{p.perIncident}</div>
+                    <ul className="mt-3 text-sm text-slate-600 list-disc pl-5 space-y-1">
+                      {p.features.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/20">
+              <button
+                onClick={submit}
+                disabled={!selected || busy}
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  !selected
+                    ? "bg-slate-400"
+                    : busy
+                    ? "bg-slate-900/80"
+                    : "bg-slate-900 hover:bg-slate-800"
+                }`}
+              >
+                {busy ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    Submitting…
+                  </>
+                ) : (
+                  selected ? `Continue with ${selected.toUpperCase()}` : "Choose a plan"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  });
+
+  // Verification card: styled like the confirmation card (collect SA ID and optional phone)
+  useCopilotAction({
+    name: "verifyMoMoMemberById",
+    description:
+      "Render a verification card for private health providers to input South African ID number (and optional phone). Returns a payload to verify the MoMo user.",
+    parameters: [
+      { name: "provider_name", type: "string", description: "Provider name (e.g., MediRescue)", required: false },
+    ],
+    renderAndWaitForResponse: function VerifyByIdCard({ args, respond }) {
+      const [idNumber, setIdNumber] = useState<string>("");
+      const [msisdn, setMsisdn] = useState<string>("");
+      const [consent, setConsent] = useState<boolean>(false);
+      const [error, setError] = useState<string>("");
+      const [busy, setBusy] = useState<boolean>(false);
+      const [submitted, setSubmitted] = useState<boolean>(false);
+      const [closed, setClosed] = useState<boolean>(false);
+
+      const isValidId = (v: string) => /^[0-9]{13}$/.test(v.trim());
+
+      const submit = () => {
+        setError("");
+        if (!isValidId(idNumber)) {
+          setError("Please enter a valid 13‑digit South African ID number.");
+          return;
+        }
+        if (!consent) {
+          setError("Please confirm consent/emergency legal basis to proceed.");
+          return;
+        }
+        setBusy(true);
+        respond?.(
+          JSON.stringify({
+            type: "verify_momo_id",
+            provider: args.provider_name || "",
+            idNumber: idNumber.trim(),
+            msisdn: (msisdn || "").trim(),
+          })
+        );
+        // Flip button state to Submitted after sending
+        Promise.resolve().then(() => {
+          setSubmitted(true);
+          setClosed(true); // Immediately close modal and return to chat
+        });
+      };
+
+      if (closed) {
+        return <div />;
+      }
+
+      return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+          {/* Modal Card */}
+          <div className="relative z-[61] my-8 mx-auto max-w-md w-full overflow-hidden rounded-2xl border border-white/20 bg-white/50 backdrop-blur-sm supports-[backdrop-filter]:bg-white/40 shadow-xl">
+            {/* Header (matches confirmation card style) */}
+            <div className="flex items-start gap-3 px-6 py-4 border-b border-white/20">
+              <div className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-full bg-slate-900/80 text-white shadow-sm ring-4 ring-white/20">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <h2 className="truncate text-lg font-semibold text-slate-900">Emergency MoMo Verification</h2>
+                {args.provider_name ? (
+                  <p className="mt-1 text-sm text-slate-600">Provider: {args.provider_name}</p>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">South African ID Number</label>
+                <input
+                  value={idNumber}
+                  onChange={(e) => setIdNumber(e.target.value.replace(/[^0-9]/g, "").slice(0, 13))}
+                  placeholder="13 digits"
+                  className="w-full rounded-lg border border-slate-300 bg-white/90 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Phone Number (optional)</label>
+                <input
+                  value={msisdn}
+                  onChange={(e) => setMsisdn(e.target.value)}
+                  placeholder="+2782… or 082…"
+                  className="w-full rounded-lg border border-slate-300 bg-white/90 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                />
+              </div>
+              <label className="flex items-start gap-2 text-xs text-slate-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                />
+                I confirm consent/emergency legal basis to verify this MoMo user for medical response.
+              </label>
+              {error ? <div className="text-xs text-red-600">{error}</div> : null}
+            </div>
+
+            {/* Footer (matches confirmation card style) */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/20">
+              <button
+                disabled={busy || submitted}
+                onClick={submit}
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  submitted
+                    ? "bg-green-600"
+                    : busy
+                    ? "bg-slate-900/80"
+                    : "bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/50"
+                }`}
+              >
+                {submitted ? (
+                  <>
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Submitted
+                  </>
+                ) : busy ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    Submitting…
+                  </>
+                ) : (
+                  "Verify"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  });
+
+  // Show Data Deals filtered by a budget (amount or lower)
+  useCopilotAction({
+    name: "showDataDealsFiltered",
+    description:
+      "Render data deals as cards filtered by a ZAR budget (amount or lower). Returns selected bundle code and amount.",
+    parameters: [
+      {
+        name: "phone_number",
+        type: "string",
+        description: "Optional target phone number (e.g., +2782...)",
+        required: false,
+      },
+      {
+        name: "budgetZAR",
+        type: "string",
+        description: "User's budget in ZAR (e.g., '200')",
+        required: true,
+      },
+      {
+        name: "deals",
+        type: "object[]",
+        description:
+          "Optional list of deals. If omitted, defaults are used. Each deal: { code, name, size, validity, priceZAR }.",
+        attributes: [
+          { name: "code", type: "string" },
+          { name: "name", type: "string" },
+          { name: "size", type: "string" },
+          { name: "validity", type: "string" },
+          { name: "priceZAR", type: "string" },
+        ],
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: function ShowDataDealsFiltered({ args, respond }) {
+      const DEFAULT_DEALS = [
+        { code: "50MB_DAILY", name: "50MB Daily", size: "50MB", validity: "1 day", priceZAR: "5", type: "once_off" },
+        { code: "200MB_DAILY", name: "200MB Daily", size: "200MB", validity: "1 day", priceZAR: "12", type: "once_off" },
+        { code: "1GB_WEEKLY", name: "1GB Weekly", size: "1GB", validity: "7 days", priceZAR: "35", type: "once_off" },
+        { code: "3GB_WEEKLY", name: "3GB Weekly", size: "3GB", validity: "7 days", priceZAR: "79", type: "once_off" },
+        { code: "5GB_ANYTIME", name: "5GB Anytime", size: "5GB", validity: "30 days", priceZAR: "149", type: "once_off" },
+        { code: "10GB_ANYTIME", name: "10GB Anytime", size: "10GB", validity: "30 days", priceZAR: "249", type: "once_off" },
+        { code: "50GB_ANYTIME", name: "50GB Anytime", size: "50GB", validity: "30 days", priceZAR: "499", type: "once_off" },
+      ];
+
+      const budget = parseFloat(String(args.budgetZAR).replace(/[^\d.]/g, "")) || 0;
+      const source = (Array.isArray(args.deals) && args.deals.length > 0) ? args.deals : DEFAULT_DEALS;
+      const filtered = source.filter((d: any) => {
+        const p = parseFloat(String(d.priceZAR).replace(/[^\d.]/g, "")) || 0;
+        return p <= budget;
+      });
+
+      // Reuse the same card rendering as showDataDeals
+      const [selected, setSelected] = useState<any | null>(null);
+      const [busy, setBusy] = useState(false);
+
+      const list = filtered.length > 0 ? filtered : [];
+
+      return (
+        <div className="my-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {list.map((deal: any) => (
+              <button
+                key={deal.code}
+                onClick={() => {
+                  setSelected(deal);
+                  if (!busy) {
+                    setBusy(true);
+                    respond?.(
+                      JSON.stringify({
+                        type: "data_deal_selected",
+                        phone: args.phone_number || "",
+                        code: deal.code,
+                        amount: deal.priceZAR,
+                      })
+                    );
+                  }
+                }}
+                className={`group text-left rounded-2xl border overflow-hidden shadow-md transform transition-all duration-200 ${
+                  selected?.code === deal.code
+                    ? "border-slate-900/20 bg-white shadow-2xl ring-2 ring-slate-900/10"
+                    : "border-slate-200 bg-white/80 hover:bg-white hover:shadow-2xl hover:-translate-y-0.5"
+                }`}
+              >
+                <div className="flex items-start justify-between px-5 pt-5">
+                  <div className="h-16 w-28 rounded-lg ring-2 ring-white/40 grid place-items-center bg-yellow-400">
+                    <svg viewBox="0 0 120 60" className="h-12 w-24" aria-label="MTN logo" role="img">
+                      <rect x="1" y="1" width="118" height="58" rx="12" ry="12" fill="#FFD100" stroke="rgba(0,0,0,0.08)" />
+                      <text x="60" y="38" textAnchor="middle" fontWeight="800" fontSize="26" fill="#0A0A0A" fontFamily="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial">MTN</text>
+                    </svg>
+                  </div>
+                  <div className="h-10 w-28 rounded-[20px] bg-yellow-400 grid place-items-center text-[11px] font-extrabold text-slate-900 tracking-wide">
+                    EXTRA
+                    <br />
+                    GIGS
+                  </div>
+                </div>
+                <div className="px-5 mt-4">
+                  <div className="text-base md:text-lg font-semibold text-slate-900 line-clamp-2">{deal.name}</div>
+                </div>
+                <div className="px-5 mt-3 text-slate-900">
+                  <div className="text-sm mb-1">Data</div>
+                  <div className="text-2xl md:text-[28px] font-extrabold tracking-tight">
+                    {String(deal.size).toUpperCase()} <span className="text-slate-900 text-base align-middle ml-1">Anytime Data</span>
+                  </div>
+                </div>
+                <div className="mt-5 mx-5 h-px bg-slate-200" />
+                <div className="flex items-center justify-between px-5 py-4">
+                  <div>
+                    <div className="text-sm text-slate-600">FROM</div>
+                    <div className="text-3xl font-extrabold text-slate-900">
+                      R{deal.priceZAR} <span className="text-base align-middle text-slate-900">PM×24</span>
+                    </div>
+                  </div>
+                  <svg className="h-6 w-6 text-slate-500 group-hover:text-slate-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-6 text-sm text-slate-500">
+            Deals within budget R{args.budgetZAR}{list.length === 0 ? " — none available" : ""}
+          </div>
+        </div>
+      );
+    },
+  });
   useCopilotAction({
     name: "pickTable",
     description:
@@ -364,9 +767,269 @@ const Chat = ({ onNotification }: { onNotification?: () => void }) => {
     },
   });
 
+  // Show Data Deals as selectable cards (agent can pass deals; falls back to defaults)
+  useCopilotAction({
+    name: "showDataDeals",
+    description:
+      "Render MTN data deals as cards for the user to select. Returns bundle code and amount.",
+    parameters: [
+      {
+        name: "phone_number",
+        type: "string",
+        description: "Optional target phone number (e.g., +2782...)",
+        required: false,
+      },
+      {
+        name: "deals",
+        type: "object[]",
+        description:
+          "Optional list of deals. If omitted, defaults are used. Each deal: { code, name, size, validity, priceZAR }",
+        attributes: [
+          { name: "code", type: "string", description: "Bundle code" },
+          { name: "name", type: "string", description: "Display name" },
+          { name: "size", type: "string", description: "e.g., 1GB" },
+          { name: "validity", type: "string", description: "e.g., 30 days" },
+          { name: "priceZAR", type: "string", description: "Price in ZAR (string)" },
+        ],
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: function ShowDataDeals({ args, respond }) {
+      const DEFAULT_DEALS = [
+        { code: "50MB_DAILY", name: "50MB Daily", size: "50MB", validity: "1 day", priceZAR: "5" },
+        { code: "200MB_DAILY", name: "200MB Daily", size: "200MB", validity: "1 day", priceZAR: "12" },
+        { code: "1GB_WEEKLY", name: "1GB Weekly", size: "1GB", validity: "7 days", priceZAR: "35" },
+        { code: "3GB_WEEKLY", name: "3GB Weekly", size: "3GB", validity: "7 days", priceZAR: "79" },
+        { code: "5GB_ANYTIME", name: "5GB Anytime", size: "5GB", validity: "30 days", priceZAR: "149" },
+        { code: "10GB_ANYTIME", name: "10GB Anytime", size: "10GB", validity: "30 days", priceZAR: "249" },
+        { code: "50GB_ANYTIME", name: "50GB Anytime", size: "50GB", validity: "30 days", priceZAR: "499" },
+      ];
+
+      const deals = Array.isArray(args.deals) && args.deals.length > 0 ? args.deals : DEFAULT_DEALS;
+      const [selected, setSelected] = useState<any | null>(null);
+      const [busy, setBusy] = useState(false);
+
+      const pick = (deal: any) => {
+        setSelected(deal);
+        if (!busy) {
+          setBusy(true);
+          respond?.(
+            JSON.stringify({
+              type: "data_deal_selected",
+              phone: args.phone_number || "",
+              code: deal.code,
+              amount: deal.priceZAR,
+            })
+          );
+        }
+      };
+
+      return (
+        <div className="my-4">
+          {/* Grid of inner cards only (no outer container visuals) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {deals.map((deal: any) => (
+              <button
+                key={deal.code}
+                onClick={() => pick(deal)}
+                className={`group text-left rounded-2xl border overflow-hidden shadow-md transform transition-all duration-200 ${
+                  selected?.code === deal.code
+                    ? "border-slate-900/20 bg-white shadow-2xl ring-2 ring-slate-900/10"
+                    : "border-slate-200 bg-white/80 hover:bg-white hover:shadow-2xl hover:-translate-y-0.5"
+                }`}
+              >
+                {/* Card Top Row */}
+                <div className="flex items-start justify-between px-5 pt-5">
+                  {/* MTN badge */}
+                  <div className="h-16 w-28 rounded-lg ring-2 ring-white/40 grid place-items-center bg-yellow-400">
+                    <svg viewBox="0 0 120 60" className="h-12 w-24" aria-label="MTN logo" role="img">
+                      <rect x="1" y="1" width="118" height="58" rx="12" ry="12" fill="#FFD100" stroke="rgba(0,0,0,0.08)" />
+                      <text x="60" y="38" textAnchor="middle" fontWeight="800" fontSize="26" fill="#0A0A0A" fontFamily="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial">MTN</text>
+                    </svg>
+                  </div>
+                  {/* Extra badge */}
+                  <div className="h-10 w-28 rounded-[20px] bg-yellow-400 grid place-items-center text-[11px] font-extrabold text-slate-900 tracking-wide">
+                    EXTRA
+                    <br />
+                    GIGS
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="px-5 mt-4">
+                  <div className="text-base md:text-lg font-semibold text-slate-900 line-clamp-2">{deal.name}</div>
+                </div>
+
+                {/* Specs */}
+                <div className="px-5 mt-3 text-slate-900">
+                  <div className="text-sm mb-1">Data</div>
+                  <div className="text-2xl md:text-[28px] font-extrabold tracking-tight">
+                    {String(deal.size).toUpperCase()} <span className="text-slate-900 text-base align-middle ml-1">Anytime</span>
+                  </div>
+                  <div className="mt-1 text-sm text-slate-600">Validity: {deal.validity} • Once-off</div>
+                </div>
+
+                {/* Divider */}
+                <div className="mt-5 mx-5 h-px bg-slate-200" />
+
+                {/* Bottom bar with price only */}
+                <div className="flex items-center justify-between px-5 py-4">
+                  <div>
+                    <div className="text-xs text-slate-600">PRICE</div>
+                    <div className="text-2xl font-extrabold text-slate-900">R{deal.priceZAR}</div>
+                  </div>
+                  <svg className="h-6 w-6 text-slate-500 group-hover:text-slate-900 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Hint Row */}
+          <div className="mt-6 text-sm text-slate-500">Tap a card to select and proceed.</div>
+        </div>
+      );
+    },
+  });
+
+  // Generic confirmation card (same pattern as table picker)
+  useCopilotAction({
+    name: "getUserConfirmation",
+    description:
+      "Show a confirmation dialog to the user. Use this when you need the user to confirm an action.",
+    parameters: [
+      {
+        name: "title",
+        type: "string",
+        description: "Dialog title (e.g., 'Confirm Airtime Purchase')",
+        required: true,
+      },
+      {
+        name: "message",
+        type: "string",
+        description: "Short message to the user (e.g., 'Buy ZAR 5 airtime for +2782... ?')",
+        required: true,
+      },
+      {
+        name: "details",
+        type: "object[]",
+        attributes: [
+          { name: "label", type: "string", description: "Detail label" },
+          { name: "value", type: "string", description: "Detail value" },
+        ],
+        description: "Optional list of label/value pairs to display",
+        required: false,
+      },
+      {
+        name: "confirm_label",
+        type: "string",
+        description: "Optional confirm button label (default 'Confirm')",
+        required: false,
+      },
+      {
+        name: "cancel_label",
+        type: "string",
+        description: "Optional cancel button label (default 'Cancel')",
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: function ConfirmationCard({ args, respond }) {
+      const [isConfirmed, setIsConfirmed] = useState(false);
+
+      const confirmLabel = args.confirm_label || "Confirm";
+      const cancelLabel = args.cancel_label || "Cancel";
+
+      return (
+        <div className="my-8 mx-auto max-w-md overflow-hidden rounded-2xl border border-white/20 bg-white/50 backdrop-blur-sm supports-[backdrop-filter]:bg-white/40 shadow-xl">
+          {/* Accent removed to match app theme */}
+          <div className="hidden" />
+
+          {/* Header */}
+          <div className="flex items-start gap-3 px-6 py-4 border-b border-white/20">
+            <div className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-full bg-slate-900/80 text-white shadow-sm ring-4 ring-white/20">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-semibold text-slate-900">{args.title}</h2>
+              <p className="mt-1 text-sm text-slate-600">{args.message}</p>
+            </div>
+          </div>
+
+          {/* Details */}
+          {args.details && args.details.length > 0 && (
+            <div className="px-6 pb-2">
+              <div className="rounded-xl border border-white/20 bg-white/40 p-4">
+                <dl className="grid grid-cols-1 gap-3">
+                  {args.details.map((detail: { label: string; value: string }, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between gap-4">
+                      <dt className="text-xs font-medium uppercase tracking-wide text-slate-600">
+                        {detail.label}
+                      </dt>
+                      <dd className="text-sm font-semibold text-slate-900">
+                        {detail.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/20">
+            <button
+              onClick={() => respond?.("User cancelled the action")}
+              disabled={isConfirmed}
+              className="rounded-lg border border-white/30 bg-white/50 px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition-colors hover:bg-white/70 focus:outline-none focus:ring-2 focus:ring-slate-500/50 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              onClick={() => {
+                if (!isConfirmed) {
+                  setIsConfirmed(true);
+                  respond?.("User confirmed the action");
+                }
+              }}
+              disabled={isConfirmed}
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 ${
+                isConfirmed ? "bg-slate-900/80 hover:bg-slate-900 focus:ring-slate-500/50" : "bg-slate-900 hover:bg-slate-800 focus:ring-slate-500/50"
+              }`}
+            >
+              {isConfirmed ? (
+                <>
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Confirmed
+                </>
+              ) : (
+                confirmLabel
+              )}
+            </button>
+          </div>
+        </div>
+      );
+    },
+  });
+
   return (
-    <div className="flex justify-center items-center h-full w-full">
-      <div className="w-8/10 h-8/10 rounded-lg">
+    <div className="flex justify-center items-start h-full w-full pt-2">
+      <div className="w-full max-w-[800px] mx-auto h-[100%] rounded-lg px-4 relative">
+        {/* Brand just above the input area (shows until first user/agent message) */}
+        {(visibleMessages?.length || 0) === 0 && (
+          <div className={`pointer-events-none absolute left-0 right-0 z-10 flex justify-start bottom-48 md:bottom-40 transition-all duration-700 ease-out ${
+            brandAnimateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+          }`}>
+            <div className="select-none ml-8 md:ml-12">
+              <div className="text-sm md:text-base font-medium text-slate-700">Welcome to</div>
+              <div className="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 drop-shadow-[0_6px_24px_rgba(0,0,0,0.35)]">inclusiV</div>
+            </div>
+          </div>
+        )}
         <CopilotChat
           className="h-full rounded-2xl"
           labels={{ initial: "Hi, I'm an agent. Want to chat?" }}
